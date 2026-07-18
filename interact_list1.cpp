@@ -43,6 +43,22 @@ void initGrid(void) {
 	}
 }
 
+int isValid(int x, int z) {
+	if (x < 0) {
+		return 0;
+	}
+	if (x >= gridSize_x) {
+		return 0;
+	}
+	if (z < 0) {
+		return 0;
+	}
+	if (z >= gridSize_z) {
+		return 0;
+	}
+	return 1;
+}
+
 void timer(int value)
 {
 	for (int i = 0; i < gridSize_x; i++) {
