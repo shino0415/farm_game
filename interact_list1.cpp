@@ -1,4 +1,5 @@
 ﻿#include <stdio.h>
+#include <stdlib.h>
 #include <glut.h>
 
 // 配列の箱の最大
@@ -59,6 +60,81 @@ int isValid(int x, int z) {
 	return 1;
 }
 
+// (x,z) が範囲内で、かつ MATURE なら 1 を返す
+int isMature(int x, int z) {
+	if (!isValid(x, z)) {
+		return 0;
+	}
+	if (grid[x][z].stage != MATURE) {
+		return 0;
+	}
+	return 1;
+}
+
+void checkCrossbreed(int x, int z)
+{
+	// 空きマスじゃなければ交配しない
+	if (grid[x][z].stage != EMPTY) {
+		return;
+	}
+
+	// 上下左右の座標
+	int up_x = x;
+	int	up_z = z - 1;
+	int down_x = x;
+	int down_z = z + 1;
+	int left_x = x - 1;
+	int left_z = z;
+	int right_x = x + 1;
+	int right_z = z;
+
+	// 上下左右のマスが MATURE かどうか
+	int upMature = isMature(up_x, up_z);
+	int downMature = isMature(down_x, down_z);
+	int leftMature = isMature(left_x, left_z);
+	int rightMature = isMature(right_x, right_z);
+
+	// ペア（上×左、左×下、下×右、右×上）のどれかが
+	// 両方MATUREなら、低確率で種を生やす
+	if (upMature && leftMature) {
+		if (rand() % 100 < 10) { // 10%の確率
+			grid[x][z].stage = SEED;
+			grid[x][z].cropType = CROP_WHEAT; // 仮に小麦にする
+			return;
+		}
+	}
+	if (leftMature && downMature) {
+		if (rand() % 100 < 10) { // 10%の確率
+			grid[x][z].stage = SEED;
+			grid[x][z].cropType = CROP_WHEAT; // 仮に小麦にする
+			return;
+		}
+	}
+	if (downMature && rightMature) {
+		if (rand() % 100 < 10) { // 10%の確率
+			grid[x][z].stage = SEED;
+			grid[x][z].cropType = CROP_WHEAT; // 仮に小麦にする
+			return;
+		}
+	}
+	if (rightMature && upMature) {
+		if (rand() % 100 < 10) { // 10%の確率
+			grid[x][z].stage = SEED;
+			grid[x][z].cropType = CROP_WHEAT; // 仮に小麦にする
+			return;
+		}
+	}
+}
+
+void checkAllCrossbreed(void) {
+	for (int i = 0; i < gridSize_x; i++) {
+		for (int j = 0; j < gridSize_z; j++) {
+			checkCrossbreed(i, j);
+		}
+	}
+}
+
+
 void timer(int value)
 {
 	for (int i = 0; i < gridSize_x; i++) {
@@ -72,6 +148,7 @@ void timer(int value)
 			}
 		}
 	}
+	checkAllCrossbreed();
 	glutPostRedisplay();
 	glutTimerFunc(1000, timer, 0);
 }
