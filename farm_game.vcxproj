@@ -19,12 +19,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\interact_list1.cpp" />
+    <ClCompile Include="interact_list1.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>18.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{8a15dd61-fc31-4e77-acf1-ba94dd390211}</ProjectGuid>
+    <ProjectGuid>{47E37AFE-EEDE-AF43-2C98-E6D361A7A854}</ProjectGuid>
     <RootNamespace>farmgame</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
