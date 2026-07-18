@@ -70,6 +70,12 @@ void keyboard(unsigned char key, int x, int y)
 				grid[select_x][select_z].cropType = CROP_WHEAT;
 			}
 			break;
+		case 'h':
+			if (grid[select_x][select_z].stage == MATURE) {
+				grid[select_x][select_z].stage = EMPTY;
+				grid[select_x][select_z].cropType = CROP_NONE;
+			}
+			break;
 		case '1':
 			printf("(%3d,%3d)で1が押されました\n", x, y);
 			break;
