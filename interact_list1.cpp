@@ -12,6 +12,16 @@ int gridSize_z = 3;
 int select_x = 1;
 int select_z = 1;
 
+// 作物の種類数
+const int CROP_COUNT = 4;   // CROP_NONE, WHEAT, CARROT, TOMATO
+
+// レシピ1つあたりでできる作物の種類の最大数
+const int MAX_RESULTS = 4;
+// レシピの最大数
+const int MAX_RECIPES = 16;
+// レシピの個数
+int recipeCount = 0;
+
 // 土の状態
 enum CropStage {
 	EMPTY,      // 空
@@ -32,6 +42,77 @@ struct Cell {
 	CropStage stage;
 	int cropType;
 };
+
+// 交配結果のフォーマット
+struct CrossbreedResult {
+	int cropType;
+	int weight;
+};
+
+// 交配レシピのフォーマット
+struct CrossbreedRecipe {
+	int typeA;
+	int typeB;
+	CrossbreedResult results[MAX_RESULTS];
+	int resultCount;
+};
+
+CrossbreedRecipe recipes[MAX_RECIPES];
+
+void initRecipes(void) {
+	// レシピ0: 小麦 × 小麦 → 小麦70%, ニンジン30%
+	recipes[0].typeA = CROP_WHEAT;
+	recipes[0].typeB = CROP_WHEAT;
+	recipes[0].results[0].cropType = CROP_WHEAT;
+	recipes[0].results[0].weight = 70;
+	recipes[0].results[1].cropType = CROP_CARROT;
+	recipes[0].results[1].weight = 30;
+	recipes[0].resultCount = 2;
+	recipeCount += 1;
+
+	recipes[1].typeA = CROP_WHEAT;
+	recipes[1].typeB = CROP_CARROT;
+	recipes[1].results[0].cropType = CROP_WHEAT;
+	recipes[1].results[0].weight = 50;
+	recipes[1].results[1].cropType = CROP_CARROT;
+	recipes[1].results[1].weight = 50;
+	recipes[1].resultCount = 2;
+	recipeCount += 1;
+
+	recipes[2].typeA = CROP_CARROT;
+	recipes[2].typeB = CROP_CARROT;
+	recipes[2].results[0].cropType = CROP_CARROT;
+	recipes[2].results[0].weight = 70;
+	recipes[2].results[1].cropType = CROP_TOMATO;
+	recipes[2].results[1].weight = 30;
+	recipes[2].resultCount = 2;
+	recipeCount += 1;
+
+	recipes[3].typeA = CROP_WHEAT;
+	recipes[3].typeB = CROP_TOMATO;
+	recipes[3].results[0].cropType = CROP_WHEAT;
+	recipes[3].results[0].weight = 60;
+	recipes[3].results[1].cropType = CROP_TOMATO;
+	recipes[3].results[1].weight = 40;
+	recipes[3].resultCount = 2;
+	recipeCount += 1;
+
+	recipes[4].typeA = CROP_CARROT;
+	recipes[4].typeB = CROP_TOMATO;
+	recipes[4].results[0].cropType = CROP_CARROT;
+	recipes[4].results[0].weight = 60;
+	recipes[4].results[1].cropType = CROP_TOMATO;
+	recipes[4].results[1].weight = 40;
+	recipes[4].resultCount = 2;
+	recipeCount += 1;
+
+	recipes[5].typeA = CROP_TOMATO;
+	recipes[5].typeB = CROP_TOMATO;
+	recipes[5].results[0].cropType = CROP_TOMATO;
+	recipes[5].results[0].weight = 100;
+	recipes[5].resultCount = 1;
+	recipeCount += 1;
+}
 
 // 土のマス目
 Cell grid[MAX_SIZE][MAX_SIZE];
@@ -71,12 +152,30 @@ int isMature(int x, int z) {
 	return 1;
 }
 
+// 2つの作物の組み合わせに合うレシピの番号を返す。（なければ-1を返す）
+int findRecipe(int typeA, int typeB) {
+	for (int r = 0; r < recipeCount; r++) {
+		// 順方向でマッチ
+		if (recipes[r].typeA == typeA && recipes[r].typeB == typeB) {
+			return r;
+		}
+		// 逆方向でマッチ
+		if (recipes[r].typeA == typeB && recipes[r].typeB == typeA) {
+			return r;
+		}
+	}
+	return -1;   // 該当なし
+}
+
 void checkCrossbreed(int x, int z)
 {
 	// 空きマスじゃなければ交配しない
 	if (grid[x][z].stage != EMPTY) {
 		return;
 	}
+
+	// 交配結果の重み
+	int weights[CROP_COUNT] = {};
 
 	// 上下左右の座標
 	int up_x = x;
@@ -88,40 +187,71 @@ void checkCrossbreed(int x, int z)
 	int right_x = x + 1;
 	int right_z = z;
 
-	// 上下左右のマスが MATURE かどうか
+	// 上下左右のマスが MATURE かどうか判定
 	int upMature = isMature(up_x, up_z);
 	int downMature = isMature(down_x, down_z);
 	int leftMature = isMature(left_x, left_z);
 	int rightMature = isMature(right_x, right_z);
 
-	// ペア（上×左、左×下、下×右、右×上）のどれかが
-	// 両方MATUREなら、低確率で種を生やす
+	// 上×左、左×下、下×右、右×上のどれかがMATUREなら、低確率でSEEDにする
+	int recipeIndex = -1;
 	if (upMature && leftMature) {
-		if (rand() % 100 < 10) { // 10%の確率
-			grid[x][z].stage = SEED;
-			grid[x][z].cropType = CROP_WHEAT; // 仮に小麦にする
-			return;
+		recipeIndex = findRecipe(grid[up_x][up_z].cropType, grid[left_x][left_z].cropType);
+		if (recipeIndex != -1) {
+			for (int i = 0; i < recipes[recipeIndex].resultCount; i++) {
+				int cropType = recipes[recipeIndex].results[i].cropType;
+				int weight = recipes[recipeIndex].results[i].weight;
+				weights[cropType] += weight;
+			}
 		}
 	}
 	if (leftMature && downMature) {
-		if (rand() % 100 < 10) { // 10%の確率
-			grid[x][z].stage = SEED;
-			grid[x][z].cropType = CROP_WHEAT; // 仮に小麦にする
-			return;
+		recipeIndex = findRecipe(grid[left_x][left_z].cropType, grid[down_x][down_z].cropType);
+		if (recipeIndex != -1) {
+			for (int i = 0; i < recipes[recipeIndex].resultCount; i++) {
+				int cropType = recipes[recipeIndex].results[i].cropType;
+				int weight = recipes[recipeIndex].results[i].weight;
+				weights[cropType] += weight;
+			}
 		}
 	}
 	if (downMature && rightMature) {
-		if (rand() % 100 < 10) { // 10%の確率
-			grid[x][z].stage = SEED;
-			grid[x][z].cropType = CROP_WHEAT; // 仮に小麦にする
-			return;
+		recipeIndex = findRecipe(grid[down_x][down_z].cropType, grid[right_x][right_z].cropType);
+		if (recipeIndex != -1) {
+			for (int i = 0; i < recipes[recipeIndex].resultCount; i++) {
+				int cropType = recipes[recipeIndex].results[i].cropType;
+				int weight = recipes[recipeIndex].results[i].weight;
+				weights[cropType] += weight;
+			}
 		}
 	}
 	if (rightMature && upMature) {
-		if (rand() % 100 < 10) { // 10%の確率
-			grid[x][z].stage = SEED;
-			grid[x][z].cropType = CROP_WHEAT; // 仮に小麦にする
-			return;
+		recipeIndex = findRecipe(grid[right_x][right_z].cropType, grid[up_x][up_z].cropType);
+		if (recipeIndex != -1) {
+			for (int i = 0; i < recipes[recipeIndex].resultCount; i++) {
+				int cropType = recipes[recipeIndex].results[i].cropType;
+				int weight = recipes[recipeIndex].results[i].weight;
+				weights[cropType] += weight;
+			}
+		}
+	}
+	int weightSum = 0;
+	for (int i = 0; i < CROP_COUNT; i++) {
+		weightSum += weights[i];
+	}
+	if (weightSum == 0) {
+		return;
+	}
+	if (rand() % 100 < 5) { // 5%の確率で交配
+		int randValue = rand() % weightSum;
+		int cumulativeWeight = 0;
+		for (int i = 0; i < CROP_COUNT; i++) {
+			cumulativeWeight += weights[i];
+			if (randValue < cumulativeWeight) {
+				grid[x][z].stage = SEED;
+				grid[x][z].cropType = i;
+				break;
+			}
 		}
 	}
 }
@@ -386,6 +516,7 @@ int main(int argc, char *argv[])
 	glutSpecialFunc(specialKey);    // 特殊キーコールバック関数の指定(押したとき)
 	glutSpecialUpFunc(specialKeyUp);// 特殊キーコールバック関数の指定(離したとき)
 	initGrid();     // 土キューブの初期化
+	initRecipes();  // レシピの設定
 	lightInit();    // 光源の初期設定(まとめて関数にしているだけ)
 	glutTimerFunc(1000, timer, 0);
 	glutMainLoop(); // メインループへ
