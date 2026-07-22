@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="interact_list1.cpp" />
+    <ClCompile Include="farm_game.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Media Include="bgm.1_112836.wav" />
