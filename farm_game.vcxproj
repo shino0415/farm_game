@@ -21,6 +21,9 @@
   <ItemGroup>
     <ClCompile Include="interact_list1.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <Media Include="bgm.1_112836.wav" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>18.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>

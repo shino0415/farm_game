@@ -1,6 +1,8 @@
 ﻿#include <stdio.h>
 #include <stdlib.h>
 #include <glut.h>
+#include <windows.h>
+#include <mmsystem.h>
 
 // 配列の箱の最大
 const int MAX_SIZE = 9;
@@ -475,7 +477,7 @@ void render_string(float x, float y, float z, const char* str) {
 }
 
 void display(void){            // 描画時に呼び出される関数（Displayコールバック関数)
-	glClearColor(0.9, 0.9, 1.0, 1.0); // 画面クリア
+	glClearColor(0.8, 0.9, 1.0, 1.0); // 画面クリア
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // 画面バッファクリア
 	glEnable(GL_DEPTH_TEST); // 隠面消去を有効
 	// 畑を中心に寄せるための変数設定
@@ -620,6 +622,7 @@ int main(int argc, char *argv[])
 	initInventory(); 			    // インベントリの初期化
 	lightInit();    // 光源の初期設定(まとめて関数にしているだけ)
 	glutTimerFunc(1000, timer, 0);
+	PlaySound(TEXT("bgm.1_112836.wav"), NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);
 	glutMainLoop(); // メインループへ
 	return 0;
 }
